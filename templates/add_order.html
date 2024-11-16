@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Add Order for {{ client.name }}</h1>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="mb-3">
+            {{ form.product_name.label(class="form-label") }}
+            {{ form.product_name(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.price.label(class="form-label") }}
+            {{ form.price(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.detail.label(class="form-label") }}
+            {{ form.detail(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.quantity.label(class="form-label") }}
+            {{ form.quantity(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+{% endblock %}

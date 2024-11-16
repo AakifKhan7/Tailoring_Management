@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Client Information Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3>Client Information</h3>
+        </div>
+        <div class="card-body">
+            <h5><strong>Name:</strong> {{ client.name }}</h5>
+            <p><strong>Street:</strong> {{ client.street }}</p>
+            <p><strong>City:</strong> {{ client.city }}</p>
+            <p><strong>Phone Number:</strong> {{ client.phone_number }}</p>
+        </div>
+    </div>
+
+    <!-- Orders Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h3>Orders for {{ client.name }}</h3>
+        </div>
+        <div class="card-body">
+            {% if client.orders %}
+                <!-- Desktop View -->
+                <div class="d-none d-md-block">
+                    <table class="table table-striped table-hover">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Product</th>
+                                <th>Status</th>
+                                <th>Price</th>
+                                <th>Order Date</th>
+                                <th>Deadline</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in client.orders %}
+                                <tr>
+                                    <td>{{ order.id }}</td>
+                                    <td>{{ order.product_name }}</td>
+                                    <td>
+                                        {% if order.status == 'Pending' %}
+                                            <span class="badge bg-warning text-dark">{{ order.status }}</span>
+                                        {% elif order.status == 'Completed' %}
+                                            <span class="badge bg-success">{{ order.status }}</span>
+                                        {% elif order.status == 'Delivered' %}
+                                            <span class="badge bg-info">{{ order.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ order.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>₹{{ order.price }}</td>
+                                    <td>{{ order.order_date.strftime('%d-%m-%Y') }}</td>
+                                    <td>{{ order.deadline.strftime('%d-%m-%Y') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('view_order', order_id=order.id) }}" class="btn btn-outline-primary btn-sm mb-1">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                        <a href="{{ url_for('edit_order', order_id=order.id) }}" class="btn btn-outline-warning btn-sm">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile View -->
+                <div class="d-block d-md-none">
+                    {% for order in client.orders %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title"><strong>{{ order.product_name }}</strong></h5>
+                                <p class="card-text">
+                                    <strong>Status:</strong> 
+                                    {% if order.status == 'Pending' %}
+                                        <span class="badge bg-warning text-dark">{{ order.status }}</span>
+                                    {% elif order.status == 'Completed' %}
+                                        <span class="badge bg-success">{{ order.status }}</span>
+                                    {% elif order.status == 'Delivered' %}
+                                        <span class="badge bg-info">{{ order.status }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ order.status }}</span>
+                                    {% endif %}
+                                </p>
+                                <p class="card-text"><strong>Price:</strong> ₹{{ order.price }}</p>
+                                <p class="card-text"><strong>Quantity:</strong>  {{ order.quantity }}</p>
+                                <p class="card-text"><strong>Order Date:</strong> {{ order.order_date.strftime('%d-%m-%Y') }}</p>
+                                <p class="card-text"><strong>Deadline:</strong> {{ order.deadline.strftime('%d-%m-%Y') }}</p>
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('view_order', order_id=order.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <a href="{{ url_for('edit_order', order_id=order.id) }}" class="btn btn-outline-warning btn-sm">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p>No orders found for this client.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons Row -->
+    <div class="d-flex flex-column align-items-center mt-4 mb-4">
+        <a href="{{ url_for('add_order', client_id=client.id) }}" class="btn btn-primary btn-lg mb-3">Add Order</a>
+        <a href="{{ url_for('generate_invoice', client_id=client.id) }}" class="btn btn-danger btn-lg mb-3">Generate Invoice</a>
+        <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg">Back to Clients</a>
+    </div>
+</div>
+{% endblock %}

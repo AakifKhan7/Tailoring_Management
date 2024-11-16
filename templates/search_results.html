@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-5 mb-4">
+        <h2 class="text-center mb-4">Search Results</h2>
+
+        {% if orders %}
+            <div class="row">
+                {% for order in orders %}
+                    <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">Order ID: {{ order.id }}</h5>
+                                <p class="card-text"><strong>Product Name:</strong> {{ order.product_name }}</p>
+                                <p class="card-text"><strong>Client Name:</strong> {{ order.client.name }}</p>
+                                <p class="card-text"><strong>Order Date:</strong> {{ order.order_date.strftime('%d-%m-%Y') }}</p>
+                                <p class="card-text"><strong>Deadline:</strong> {{ order.deadline.strftime('%d-%m-%Y') }}</p>
+                                <p class="card-text"><strong>Status:</strong> {{ order.status }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center">No results found for your search query.</p>
+        {% endif %}
+    </div>
+{% endblock %}
+
+<style>
+    /* Prevent Horizontal Scrolling */
+    body {
+        overflow-x: hidden;
+    }
+
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        max-width: 100%; /* Ensure the card doesn't overflow */
+        margin: 0 auto; /* Center card */
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .card-text {
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+
+    /* Responsive Layout */
+    .container {
+        max-width: 100%; /* Ensure the container stays within the viewport */
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    @media (max-width: 768px) {
+        .card {
+            margin-bottom: 15px;
+        }
+    }
+</style>

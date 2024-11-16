@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <div class="container mt-5 mb-4">
+        <!-- Title -->
+        <h2 class="text-center mb-4">Edit Order Information</h2>
+
+        <div class="row">
+            <!-- Product Name Field -->
+            <div class="col-md-6 mb-3">
+                <div class="form-group">
+                    <label for="product_name" class="form-label">Product Name</label>
+                    {{ form.product_name(class="form-control", id="product_name", value=order.product_name, placeholder="Enter product name") }}
+                </div>
+            </div>
+
+            <!-- Status Field -->
+            <div class="col-md-6 mb-3">
+                <div class="form-group">
+                    <label for="status" class="form-label">Status</label>
+                    <div class="custom-select-wrapper">
+                        {{ form.status(class="form-select", id="status", value=order.status) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Price Field -->
+            <div class="col-md-6 mb-3">
+                <div class="form-group">
+                    <label for="price" class="form-label">Price</label>
+                    {{ form.price(class="form-control", id="price", value=order.price, placeholder="Enter price") }}
+                </div>
+            </div>
+
+            <!-- Order Date Field -->
+            <div class="col-md-6 mb-3">
+                <div class="form-group">
+                    <label for="order_date" class="form-label">Order Date</label>
+                    {{ form.order_date(class="form-control", id="order_date", value=order.order_date.strftime('%d-%m-%Y'), placeholder="Enter order date") }}
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Deadline Date Field -->
+            <div class="col-md-6 mb-3">
+                <div class="form-group">
+                    <label for="deadline" class="form-label">Deadline Date</label>
+                    {{ form.deadline(class="form-control", id="deadline", value=order.deadline.strftime('%d-%m-%Y'), placeholder="Enter deadline date") }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Buttons Section -->
+        <div class="d-flex flex-column align-items-center mt-4">
+            <button type="submit" class="btn btn-primary mb-3 w-100">Update Order</button>
+            <a href="{{ url_for('home') }}" class="btn btn-secondary w-100">Cancel</a>
+        </div>
+    </div>
+</form>
+
+{% endblock %}

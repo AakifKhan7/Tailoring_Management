@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h1 class="mb-4 text-center">All Invoices</h1>
+
+        {% if invoices %}
+            <div class="row">
+                {% for invoice in invoices %}
+                    <div class="col-sm-12 col-md-6 col-lg-4 mb-4">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">Invoice #{{ invoice.id }}</h5>
+                                <p class="card-text">
+                                    <strong>Generated Date:</strong> {{ invoice.generated_at.strftime("%d-%m-%Y") }}<br>
+                                    <strong>Client:</strong> {{ invoice.order.client.name }}<br>
+                                </p>
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}" class="btn btn-sm btn-info">View</a>
+                                    <a href="{{ url_for('download_invoice', invoice_id=invoice.id) }}" class="btn btn-sm btn-success">Download</a>
+                                    <form action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted text-center">No invoices available.</p>
+        {% endif %}
+    </div>
+{% endblock %}

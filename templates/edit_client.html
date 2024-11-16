@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="container mt-5">
+        <!-- Page Title -->
+        <h2 class="text-center mb-4">Edit Client Information</h2>
+
+        <!-- Edit Client Form -->
+        <div class="card shadow-lg p-4">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <!-- Client Name -->
+                <div class="form-group mb-3">
+                    <label for="name" class="form-label">Client Name</label>
+                    {{ form.name(class="form-control", id="name", placeholder="Enter client name") }}
+                </div>
+
+                <!-- Street Address -->
+                <div class="form-group mb-3">
+                    <label for="street" class="form-label">Street Address</label>
+                    {{ form.street(class="form-control", id="street", placeholder="Enter street address") }}
+                </div>
+
+                <!-- City -->
+                <div class="form-group mb-3">
+                    <label for="city" class="form-label">City</label>
+                    {{ form.city(class="form-control", id="city", placeholder="Enter city name") }}
+                </div>
+
+                <!-- Phone Number -->
+                <div class="form-group mb-4">
+                    <label for="phone_number" class="form-label">Phone Number</label>
+                    {{ form.phone_number(class="form-control", id="phone_number", placeholder="Enter phone number") }}
+                </div>
+
+                <!-- Submit and Cancel Buttons -->
+                <div class="d-flex justify-content-between">
+                    {{ form.submit(class="btn btn-success btn-lg") }}
+                    <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

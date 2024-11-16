@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="invoice-container">
+        <!-- Header Section -->
+        <div class="header text-center mb-4">
+            <h1>Invoice</h1>
+        </div>
+
+        <!-- Client Information (Left-aligned with spacing) -->
+        <div class="client-info" style="text-align: left; margin-bottom: 30px;">
+            <p><strong>Generated on:</strong> {{ invoice.generated_at.strftime('%d-%m-%Y') }}</p>
+            <p><strong>Client Name:</strong> {{ invoice.order.client.name }}</p>
+            <p><strong>Address:</strong> {{ invoice.order.client.street }}, {{ invoice.order.client.city }}</p>
+            <p><strong>Phone:</strong> {{ invoice.order.client.phone_number }}</p>
+        </div>
+
+        <!-- Table for Invoice Details -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Product Name</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ invoice.order.product_name }}</td>
+                    <td>{{ invoice.order.quantity }}</td>
+                    <td>₹{{ invoice.order.price }}</td>
+                    <td>₹{{ invoice.order.quantity * invoice.order.price }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Total Amount -->
+        <div class="total text-right mt-4">
+            <h3>Total Amount: ₹{{ invoice.order.quantity * invoice.order.price }}</h3>
+        </div>
+    </div>
+
+    <!-- Download Invoice Button (Centered at bottom) -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('download_invoice', invoice_id=invoice.id) }}" class="btn btn-primary">Download Invoice</a>
+    </div>
+</div>
+{% endblock %}
