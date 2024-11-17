@@ -3,35 +3,91 @@ from forms import *
 from model import *
 from database import create_app
 from datetime import timedelta , datetime
-from sqlalchemy import extract
+from flask_login import login_user, LoginManager, current_user, logout_user, login_required
+from werkzeug.security import generate_password_hash, check_password_hash
 from html2image import Html2Image
 import io, os
 
 
 app = create_app()
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(admin_id):
+    return db.get_or_404(Admin, admin_id)
 
 @app.route('/')
 def home():
-    clients = Client.query.all()
+    if current_user.is_authenticated:
+        clients = Client.query.filter_by(admin_id=current_user.id).all()
+    
+    else:
+        clients = []
     return render_template('index.html', clients=clients)
-    # orders = Order.query.all()
-    # return render_template(
-    #     "invoice_template.html",
-    #     client_name="aakif",
-    #     current_date="17-11-2024",
-    #     orders=orders,
-    #     total_amount=500
-    # )
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    form = SignUp()
+
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(
+            form.password.data,
+            method='pbkdf2:sha256',
+            salt_length=8
+        )
+
+        new_user = Admin(
+            email=form.email.data,
+            admin_name=form.name.data,
+            password=hashed_password,
+            phone_number=form.phone_number.data
+        )
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        login_user(new_user)
+        flash('Account created and logged in successfully!', 'success')
+        return redirect(url_for('home')) 
+    
+    return render_template('signup.html', form=form)
+
+@app.route('/login', methods=["GET", "POST"])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = form.email.data
+        password = form.password.data
+        result = db.session.execute(db.select(Admin).where(Admin.email == email))
+        user = result.scalar()
+        
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            return redirect(url_for('home'))
+        
+    return render_template("login.html", form=form)
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
 
 @app.route('/add-client', methods=['GET', 'POST'])
 def add_client():
     form = AddClient()
     if form.validate_on_submit():
+        if current_user.is_authenticated:
+            current_admin_id = current_user.id
+        else:
+            flash("please login for add client!")
+            return redirect('login')
         new_client = Client(
             name=form.name.data,
             street=form.street.data,
             city=form.city.data,
-            phone_number=form.phone_number.data
+            phone_number=form.phone_number.data,
+            admin_id = current_admin_id
         )
         
         db.session.add(new_client)
@@ -43,6 +99,7 @@ def add_client():
     return render_template('add_client.html', form=form)
 
 @app.route('/client/<int:client_id>/edit', methods=['GET', 'POST'])
+@login_required
 def edit_client(client_id):
     client = Client.query.get_or_404(client_id)
     
@@ -59,16 +116,23 @@ def edit_client(client_id):
     return render_template('edit_client.html', form=form, client=client)
 
 @app.route('/client/<int:client_id>')
+@login_required
 def client_info(client_id):
     client = Client.query.get_or_404(client_id)
     
     return render_template('client_info.html', client=client)
 
 @app.route('/client/<int:client_id>/add_order', methods=['GET', 'POST'])
+@login_required
 def add_order(client_id):
     form = AddOrder()
     client = Client.query.get_or_404(client_id)
     if form.validate_on_submit():
+        if current_user.is_authenticated:
+            current_admin_id = current_user.id
+        else:
+            flash("please login for add Order!")
+            return redirect('login')
         
         order_date = datetime.utcnow()
         deadline = order_date + timedelta(days=7)
@@ -80,7 +144,8 @@ def add_order(client_id):
             quantity=form.quantity.data,
             status="Pending",
             order_date=order_date,
-            deadline=deadline
+            deadline=deadline,
+            admin_id = current_admin_id
         )
         
         db.session.add(new_order)
@@ -91,11 +156,13 @@ def add_order(client_id):
     return render_template('add_order.html', client=client, form=form)
 
 @app.route('/order/<int:order_id>')
+@login_required
 def view_order(order_id):
     order = Order.query.get_or_404(order_id)
     return render_template('view_order.html', order=order)
 
 @app.route('/order/<int:order_id>/delete', methods=['POST'])
+@login_required
 def delete_order(order_id):
     order = Order.query.get_or_404(order_id)
     db.session.delete(order)
@@ -103,10 +170,16 @@ def delete_order(order_id):
     return redirect(url_for('home'))
 
 @app.route('/generate_invoice/<int:client_id>', methods=['GET'])
+@login_required
 def generate_invoice(client_id):
     orders = Order.query.filter_by(client_id=client_id, status='Completed').all()
     if not orders:
         return abort(404, "No completed orders found for this client")
+    if current_user.is_authenticated:
+        current_admin_id = current_user.id
+    else:
+        flash("please login for generate invoice")
+        return redirect('login')
 
     total_amount = sum(order.quantity * order.price for order in orders)
     current_date = datetime.now().strftime("%d-%m-%Y")
@@ -143,7 +216,8 @@ def generate_invoice(client_id):
     new_invoice = Invoice(
         order_id=orders[0].id,
         invoice_image=invoice_filename,
-        generated_at=datetime.utcnow()
+        generated_at=datetime.utcnow(),
+        admin_id = current_admin_id
     )
     db.session.add(new_invoice)
     db.session.commit()
@@ -157,16 +231,19 @@ def generate_invoice(client_id):
     
     
 @app.route('/invoices', methods=['GET'])
+@login_required
 def invoices():
-    invoices = Invoice.query.order_by(Invoice.generated_at.desc()).all()
+    invoices = Invoice.query.filter_by(admin_id=current_user.id).order_by(Invoice.generated_at.desc()).all()
     return render_template('invoices_list.html', invoices=invoices)
 
 @app.route('/view_invoice/<int:invoice_id>', methods=['GET'])
+@login_required
 def view_invoice(invoice_id):
-    invoice = Invoice.query.get_or_404(invoice_id)
+    invoice = Invoice.query.filter_by(id=invoice_id, admin_id=current_user.id).first_or_404()
     return render_template('invoice_detail.html', invoice=invoice)
 
 @app.route('/download_invoice/<int:invoice_id>', methods=['GET'])
+@login_required
 def download_invoice(invoice_id):
     invoice = Invoice.query.get_or_404(invoice_id)
     orders = Order.query.filter_by(id=invoice.order_id).all()
@@ -213,6 +290,7 @@ def download_invoice(invoice_id):
     
     
 @app.route('/view_invoice/<int:invoice_id>', methods=["POST"])
+@login_required
 def delete_invoice(invoice_id):
     invoice = Invoice.query.get_or_404(invoice_id)
     
@@ -222,6 +300,7 @@ def delete_invoice(invoice_id):
     return redirect(url_for('invoices'))
 
 @app.route('/edit_order/<int:order_id>', methods=['GET', 'POST'])
+@login_required
 def edit_order(order_id):
     order = Order.query.get_or_404(order_id)
     form = EditOrderForm()
@@ -248,13 +327,14 @@ def edit_order(order_id):
 
 
 @app.route('/pending-orders', methods=["GET", "POST"])
+@login_required
 def pending_orders():
-    pending_orders = Order.query.filter_by(status='Pending').all()
+    pending_orders = Order.query.filter_by(admin_id=current_user.id, status='Pending').all()
     
     return render_template('pending_orders.html', orders=pending_orders)
 
-
 @app.route('/orders', methods=['GET'])
+@login_required
 def orders():
     current_year = int(request.args.get('year', datetime.now().year))
     month = request.args.get('month', None)
@@ -263,7 +343,8 @@ def orders():
         
         orders = Order.query.filter(
             db.extract('year', Order.order_date) == current_year,
-            db.extract('month', Order.order_date) == int(month)
+            db.extract('month', Order.order_date) == int(month),
+            Order.admin_id == current_user.id
         ).all()
         
         total_earnings = db.session.query(db.func.sum(Order.price * Order.quantity)).filter(
@@ -279,6 +360,7 @@ def orders():
 
 
 @app.route('/search', methods=['GET'])
+@login_required
 def search():
     query = request.args.get('query')
     if query:

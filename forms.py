@@ -1,6 +1,21 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateTimeField, SubmitField, SelectField, FloatField, IntegerField, TextAreaField, FileField
-from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
+from wtforms import StringField, DateTimeField, SubmitField, SelectField, FloatField, IntegerField, TextAreaField, PasswordField
+from wtforms.validators import DataRequired, Email, Length
+
+
+class SignUp(FlaskForm):
+    name = StringField('Name', validators=[DataRequired(), Length(max=30)])
+    email = StringField("Email", validators=[DataRequired(), Email(), Length(max=30)])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=15)])
+    phone_number = StringField("Phone Number", validators=[DataRequired(), Length(min=10, max=20)])
+    
+    submit = SubmitField("Sign Me Up!")
+    
+class LoginForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Length(max=30)])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=8, max=15)])
+
+    submit = SubmitField("Login!")
 
 class AddClient(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=30)])
