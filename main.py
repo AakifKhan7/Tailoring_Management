@@ -76,12 +76,12 @@ def logout():
 @app.route('/add-client', methods=['GET', 'POST'])
 def add_client():
     form = AddClient()
+    if current_user.is_authenticated:
+        current_admin_id = current_user.id
+    else:
+        flash("please login for add client!")
+        return redirect('signup')
     if form.validate_on_submit():
-        if current_user.is_authenticated:
-            current_admin_id = current_user.id
-        else:
-            flash("please login for add client!")
-            return redirect('login')
         new_client = Client(
             name=form.name.data,
             street=form.street.data,
@@ -365,11 +365,10 @@ def search():
     query = request.args.get('query')
     if query:
         order_query = Order.query.filter(
-            (Order.id.ilike(f'%{query}%')) | 
-            (Order.product_name.ilike(f'%{query}%')) | 
-            (Order.client.has(Client.name.ilike(f'%{query}%'))) |
-            (Order.status.ilike(f'%{query}%'))
-        )
+        (Order.id.ilike(f"%{query}%")) | 
+        (Order.product_name.ilike(f"%{query}%")) | 
+        (Order.client.has(Client.name.ilike(f"%{query}%"))) |
+        (Order.status.ilike(f"%{query}%"))).filter_by(admin_id=current_user.id)
         orders = order_query.all()
     else:
         orders = Order.query.all()
