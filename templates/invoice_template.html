@@ -19,6 +19,7 @@
             color: #333;
             padding: 20px;
             margin: 0;
+            padding-top: 120px; /* Increased top padding for more margin */
         }
 
         /* Main Container */
@@ -29,7 +30,7 @@
             padding: 20px 40px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
-            margin: 20px auto;
+            margin: 0 auto;  /* Center it horizontally */
         }
 
         /* Header */
@@ -90,6 +91,7 @@
         @media (max-width: 768px) {
             body {
                 padding: 10px;
+                padding-top: 60px; /* Adjust top margin on smaller screens */
             }
 
             .invoice-container {
@@ -160,7 +162,7 @@
         </table>
 
         <div class="total">
-            <p>Total Amount Due: ₹{{ total_amount }}</p>
+            <p>Total Amount : ₹{{ total_amount }}</p>
         </div>
     </div>
 </body>

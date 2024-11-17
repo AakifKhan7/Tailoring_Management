@@ -1,11 +1,11 @@
-from flask import send_file, render_template, redirect, url_for, flash, request
+from flask import send_file, render_template, redirect, url_for, flash, request, abort
 from forms import *
 from model import *
 from database import create_app
 from datetime import timedelta , datetime
 from sqlalchemy import extract
 from html2image import Html2Image
-import io
+import io, os
 
 
 app = create_app()
@@ -14,6 +14,14 @@ app = create_app()
 def home():
     clients = Client.query.all()
     return render_template('index.html', clients=clients)
+    # orders = Order.query.all()
+    # return render_template(
+    #     "invoice_template.html",
+    #     client_name="aakif",
+    #     current_date="17-11-2024",
+    #     orders=orders,
+    #     total_amount=500
+    # )
 
 @app.route('/add-client', methods=['GET', 'POST'])
 def add_client():
@@ -97,17 +105,17 @@ def delete_order(order_id):
 @app.route('/generate_invoice/<int:client_id>', methods=['GET'])
 def generate_invoice(client_id):
     orders = Order.query.filter_by(client_id=client_id, status='Completed').all()
-    
     if not orders:
-        return "No Completed orders found for this client", 404 
+        return abort(404, "No completed orders found for this client")
 
     total_amount = sum(order.quantity * order.price for order in orders)
-    
     current_date = datetime.now().strftime("%d-%m-%Y")
-    
+
     client = Client.query.get(client_id)
-    client_name = client.name if client else "Unknown Client"
-    
+    if not client:
+        return abort(404, "Client not found")
+    client_name = client.name
+
     rendered_html = render_template(
         "invoice_template.html",
         client_name=client_name,
@@ -116,20 +124,25 @@ def generate_invoice(client_id):
         total_amount=total_amount
     )
 
-    img_io = io.BytesIO()
-
     hti = Html2Image()
+    hti.browser.viewport_size = (1080, 2000)
+    hti.size = (1080, 1920)
+    temp_file = 'temp_invoice.png'
+    hti.screenshot(html_str=rendered_html, save_as=temp_file)
 
-    hti.screenshot(html_str=rendered_html, save_as="invoice_temp.png")
-    
-    with open("invoice_temp.png", "rb") as img_file:
-        img_io.write(img_file.read())
-    
+    with open(temp_file, "rb") as img_file:
+        img_data = img_file.read()
+
+    img_io = io.BytesIO()
+    img_io.write(img_data)
     img_io.seek(0)
-    
+    os.remove(temp_file)
+
+    invoice_filename = f"{client_name.replace(' ', '')}_invoice.jpg"
+
     new_invoice = Invoice(
         order_id=orders[0].id,
-        invoice_image="{client_name}_invoice.jpg",
+        invoice_image=invoice_filename,
         generated_at=datetime.utcnow()
     )
     db.session.add(new_invoice)
@@ -138,7 +151,7 @@ def generate_invoice(client_id):
     return send_file(
         img_io,
         as_attachment=True,
-        download_name=f"{client_name}_invoice.jpg",
+        download_name=invoice_filename,
         mimetype='image/jpeg'
     )
     
@@ -175,19 +188,26 @@ def download_invoice(invoice_id):
         total_amount=total_amount
     )
     
-    img_io = io.BytesIO()
     hti = Html2Image()
-    hti.screenshot(html_str=rendered_html, save_as="invoice_temp.jpg")
-    
-    with open("invoice_temp.jpg", "rb") as f:
-        img_io.write(f.read())
-    
+    hti.browser.viewport_size = (1080, 2000)
+    hti.size = (1080, 1920)
+    temp_file = 'temp_invoice.png'
+    hti.screenshot(html_str=rendered_html, save_as=temp_file)
+
+    with open(temp_file, "rb") as img_file:
+        img_data = img_file.read()
+
+    img_io = io.BytesIO()
+    img_io.write(img_data)
     img_io.seek(0)
+    os.remove(temp_file)
+
+    invoice_filename = f"{client_name.replace(' ', '')}_invoice.jpg"
     
     return send_file(
         img_io,
         as_attachment=True,
-        download_name=f"{client_name}_invoice.jpg",
+        download_name=invoice_filename,
         mimetype='image/jpeg'
     )
     
