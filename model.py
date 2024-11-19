@@ -37,12 +37,14 @@ class Client(db.Model):
     
     def __repr__(self):
         return f'<Client {self.name}>'
+    
 
 
 class Order(db.Model):
     __tablename__ = 'orders'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_number: Mapped[int] = mapped_column(Integer, nullable=False)
     order_date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     deadline: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     product_name: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -58,12 +60,14 @@ class Order(db.Model):
 
     def __repr__(self):
         return f'<Order {self.id} - {self.status}>'
+    
 
 
 class Invoice(db.Model):
     __tablename__ = 'invoices'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    invoice_number: Mapped[int] = mapped_column(Integer, nullable=False)
     order_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('orders.id'), nullable=False)
     generated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     invoice_image: Mapped[str] = mapped_column(String(200), nullable=False)

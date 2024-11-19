@@ -10,7 +10,7 @@
                     <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
                         <div class="card shadow-sm">
                             <div class="card-body">
-                                <h5 class="card-title">Order ID: {{ order.id }}</h5>
+                                <h5 class="card-title">Order ID: {{ order.order_number }}</h5>
                                 <p class="card-text"><strong>Product Name:</strong> {{ order.product_name }}</p>
                                 <p class="card-text"><strong>Client Name:</strong> {{ order.client.name }}</p>
                                 <p class="card-text"><strong>Order Date:</strong> {{ order.order_date.strftime('%d-%m-%Y') }}</p>

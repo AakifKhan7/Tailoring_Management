@@ -79,7 +79,6 @@ def add_client():
     if current_user.is_authenticated:
         current_admin_id = current_user.id
     else:
-        flash("please login for add client!")
         return redirect('signup')
     if form.validate_on_submit():
         new_client = Client(
@@ -135,7 +134,14 @@ def add_order(client_id):
             return redirect('login')
         
         order_date = datetime.utcnow()
-        deadline = order_date + timedelta(days=7)
+        deadline = order_date + timedelta(days=10)
+        
+        last_order = (
+            Order.query.filter_by(client_id=client.id)
+            .order_by(Order.order_number.desc())
+            .first()
+        )
+        next_order_number = last_order.order_number + 1 if last_order else 1
 
         new_order =  Order(
             client_id=client.id,
@@ -145,7 +151,8 @@ def add_order(client_id):
             status="Pending",
             order_date=order_date,
             deadline=deadline,
-            admin_id = current_admin_id
+            admin_id = current_admin_id,
+            order_number=next_order_number
         )
         
         db.session.add(new_order)
@@ -155,19 +162,25 @@ def add_order(client_id):
     
     return render_template('add_order.html', client=client, form=form)
 
-@app.route('/order/<int:order_id>')
+@app.route('/admin/<int:admin_id>/order/<int:order_number>')
 @login_required
-def view_order(order_id):
-    order = Order.query.get_or_404(order_id)
+def view_order(admin_id, order_number):
+    order = Order.query.filter_by(admin_id=admin_id, order_number=order_number).first_or_404()
+    if order.admin_id != current_user.id:
+        flash("You are not authorized to view this order.")
+        return redirect(url_for('home'))
     return render_template('view_order.html', order=order)
 
 @app.route('/order/<int:order_id>/delete', methods=['POST'])
 @login_required
 def delete_order(order_id):
     order = Order.query.get_or_404(order_id)
+    if order.admin_id != current_user.id:
+        flash("You are not authorized to delete this order.")
+        return redirect(url_for('home'))
     db.session.delete(order)
     db.session.commit()
-    return redirect(url_for('home'))
+    return redirect('client_info', client_id=order.client_id)
 
 @app.route('/generate_invoice/<int:client_id>', methods=['GET'])
 @login_required
@@ -188,13 +201,20 @@ def generate_invoice(client_id):
     if not client:
         return abort(404, "Client not found")
     client_name = client.name
+    
+    last_invoice = (
+            Invoice.query.filter_by(admin_id=current_admin_id)
+            .order_by(Invoice.invoice_number.desc())
+            .first()
+        ) or Invoice(invoice_number=0)
+    next_invoice_number = last_invoice.invoice_number + 1
 
     rendered_html = render_template(
         "invoice_template.html",
         client_name=client_name,
         current_date=current_date,
         orders=orders,
-        total_amount=total_amount
+        total_amount=total_amount,
     )
 
     hti = Html2Image()
@@ -217,7 +237,8 @@ def generate_invoice(client_id):
         order_id=orders[0].id,
         invoice_image=invoice_filename,
         generated_at=datetime.utcnow(),
-        admin_id = current_admin_id
+        admin_id = current_admin_id,
+        invoice_number=next_invoice_number
     )
     db.session.add(new_invoice)
     db.session.commit()
@@ -236,10 +257,10 @@ def invoices():
     invoices = Invoice.query.filter_by(admin_id=current_user.id).order_by(Invoice.generated_at.desc()).all()
     return render_template('invoices_list.html', invoices=invoices)
 
-@app.route('/view_invoice/<int:invoice_id>', methods=['GET'])
+@app.route('/view_invoice/<int:invoice_number>', methods=['GET'])
 @login_required
-def view_invoice(invoice_id):
-    invoice = Invoice.query.filter_by(id=invoice_id, admin_id=current_user.id).first_or_404()
+def view_invoice(invoice_number):
+    invoice = Invoice.query.filter_by(invoice_number=invoice_number, admin_id=current_user.id).first_or_404()
     return render_template('invoice_detail.html', invoice=invoice)
 
 @app.route('/download_invoice/<int:invoice_id>', methods=['GET'])
@@ -364,8 +385,7 @@ def orders():
 def search():
     query = request.args.get('query')
     if query:
-        order_query = Order.query.filter(
-        (Order.id.ilike(f"%{query}%")) | 
+        order_query = Order.query.filter( 
         (Order.product_name.ilike(f"%{query}%")) | 
         (Order.client.has(Client.name.ilike(f"%{query}%"))) |
         (Order.status.ilike(f"%{query}%"))).filter_by(admin_id=current_user.id)
@@ -375,4 +395,4 @@ def search():
     return render_template('search_results.html', orders=orders)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
