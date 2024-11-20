@@ -8,3 +8,4 @@ python-dotenv==1.0.0
 WTForms==3.0.0
 SQLAlchemy==1.4.44
 Werkzeug==2.2.3
+gunicorn
