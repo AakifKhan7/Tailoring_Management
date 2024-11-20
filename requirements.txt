@@ -1,7 +1,7 @@
 Flask==2.3.3
 Flask-SQLAlchemy==3.0.0
 Flask-WTF==1.1.0
-Flask-Bootstrap==5.2.0
+flask-bootstrap5==1.0.0
 Flask-Login==0.7.0
 html2image==2.0.1
 python-dotenv==1.0.0
