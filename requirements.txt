@@ -10,5 +10,3 @@ SQLAlchemy==1.4.44
 Werkzeug==2.2.3
 gunicorn
 email_validator
-
-git commit -m "Add email_validator to dependencies"
