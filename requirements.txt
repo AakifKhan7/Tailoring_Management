@@ -7,6 +7,6 @@ html2image==2.0.1
 python-dotenv==1.0.0
 WTForms==2.3.3
 SQLAlchemy==1.4.44
-Werkzeug==2.2.3
+Werkzeug>=2.3.7
 gunicorn
 email-validator
