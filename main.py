@@ -225,6 +225,7 @@ def generate_invoice(client_id):
 
     with open(temp_file, "rb") as img_file:
         img_data = img_file.read()
+        
 
     img_io = io.BytesIO()
     img_io.write(img_data)
