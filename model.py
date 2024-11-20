@@ -10,7 +10,7 @@ class Admin(UserMixin, db.Model):
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     admin_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    password: Mapped[str] = mapped_column(String(20), nullable=False)
+    password: Mapped[str] = mapped_column(String(130), nullable=False)
     email: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     phone_number: Mapped[str] = mapped_column(String(20), nullable=True)
     
