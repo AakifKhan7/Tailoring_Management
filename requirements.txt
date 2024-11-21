@@ -12,3 +12,4 @@ WTForms==3.2.1
 gunicorn
 email-validator
 psycopg2-binary==2.9.8
+weasyprint

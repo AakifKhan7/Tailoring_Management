@@ -6,6 +6,7 @@ from datetime import timedelta , datetime
 from flask_login import login_user, LoginManager, current_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from html2image import Html2Image
+from weasyprint import HTML
 import io, os
 
 
@@ -182,33 +183,41 @@ def delete_order(order_id):
     db.session.commit()
     return redirect('client_info', client_id=order.client_id)
 
+
 @app.route('/generate_invoice/<int:client_id>', methods=['GET'])
 @login_required
 def generate_invoice(client_id):
+    # Fetch completed orders for the client
     orders = Order.query.filter_by(client_id=client_id, status='Completed').all()
     if not orders:
         return abort(404, "No completed orders found for this client")
+
+    # Ensure the user is authenticated
     if current_user.is_authenticated:
         current_admin_id = current_user.id
     else:
-        flash("please login for generate invoice")
+        flash("Please log in to generate an invoice")
         return redirect('login')
 
+    # Calculate total amount
     total_amount = sum(order.quantity * order.price for order in orders)
     current_date = datetime.now().strftime("%d-%m-%Y")
 
+    # Fetch client details
     client = Client.query.get(client_id)
     if not client:
         return abort(404, "Client not found")
     client_name = client.name
-    
-    last_invoice = (
-            Invoice.query.filter_by(admin_id=current_admin_id)
-            .order_by(Invoice.invoice_number.desc())
-            .first()
-        ) or Invoice(invoice_number=0)
-    next_invoice_number = last_invoice.invoice_number + 1
 
+    # Generate the next invoice number
+    last_invoice = (
+        Invoice.query.filter_by(admin_id=current_admin_id)
+        .order_by(Invoice.invoice_number.desc())
+        .first()
+    )
+    next_invoice_number = (last_invoice.invoice_number + 1) if last_invoice else 1
+
+    # Render HTML template for the invoice
     rendered_html = render_template(
         "invoice_template.html",
         client_name=client_name,
@@ -217,40 +226,31 @@ def generate_invoice(client_id):
         total_amount=total_amount,
     )
 
-    hti = Html2Image()
-    hti.browser.viewport_size = (1080, 2000)
-    hti.size = (1080, 1920)
-    temp_file = 'temp_invoice.png'
-    hti.screenshot(html_str=rendered_html, save_as=temp_file)
+    # Generate the PDF using WeasyPrint
+    pdf_io = io.BytesIO()
+    HTML(string=rendered_html).write_pdf(pdf_io)
+    pdf_io.seek(0)
 
-    with open(temp_file, "rb") as img_file:
-        img_data = img_file.read()
-        
-
-    img_io = io.BytesIO()
-    img_io.write(img_data)
-    img_io.seek(0)
-    os.remove(temp_file)
-
-    invoice_filename = f"{client_name.replace(' ', '')}_invoice.jpg"
-
+    # Save the invoice record to the database
+    invoice_filename = f"{client_name.replace(' ', '')}_invoice.pdf"
     new_invoice = Invoice(
         order_id=orders[0].id,
         invoice_image=invoice_filename,
         generated_at=datetime.utcnow(),
-        admin_id = current_admin_id,
+        admin_id=current_admin_id,
         invoice_number=next_invoice_number
     )
     db.session.add(new_invoice)
     db.session.commit()
 
+    # Return the PDF file as a downloadable response
     return send_file(
-        img_io,
+        pdf_io,
         as_attachment=True,
         download_name=invoice_filename,
-        mimetype='image/jpeg'
+        mimetype='application/pdf'
     )
-    
+
     
 @app.route('/invoices', methods=['GET'])
 @login_required
